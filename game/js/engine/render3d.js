@@ -429,7 +429,7 @@
 
   window.Render3D = {
     init, frame, project, TILE: 48,
-    rotar() { camRot = (camRot + 1) % 4; },
+    rotar(dir = 1) { camRot = (camRot + dir + 4) % 4; },
     get rot() { return camRot; },
   };
 })();

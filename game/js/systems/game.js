@@ -355,7 +355,7 @@
     );
     if (contAqui && !contAqui.avisado) {
       contAqui.avisado = true;
-      world.log(`Hay ${NOMBRES_CONT[contAqui.id] ?? 'un contenedor'} aquí. Pulsa E para registrarlo.`, 'good');
+      world.log(`Hay ${NOMBRES_CONT[contAqui.id] ?? 'un contenedor'} aquí. Pulsa ESPACIO para registrarlo.`, 'good');
     }
 
     // reglas del nivel + necesidades

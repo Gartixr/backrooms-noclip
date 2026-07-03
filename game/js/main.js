@@ -118,15 +118,12 @@
         dx = rx; dy = ry;
       }
       Game.tryMove(dx, dy);
-    } else if (ev.code === 'KeyQ') {
-      if (use3D) {
-        Render3D.rotar();
-        world.ui.log('Giras la vista 90°.', 'event');
-      }
+    } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
+      if (use3D) Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
     } else if (ev.code === 'Space') {
       ev.preventDefault();
-      Game.wait();
-    } else if (ev.code === 'KeyE') Game.interact();
+      Game.interact();
+    } else if (ev.code === 'KeyX') Game.wait();
     else if (ev.code === 'KeyF') Game.toggleLuz();
     else if (ev.code === 'KeyR') Game.volver();
     else if (ev.code === 'KeyJ') world.ui.toggleJournal();
