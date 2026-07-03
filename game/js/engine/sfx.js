@@ -89,32 +89,32 @@
 
   // ---------- efectos ----------
   const PASOS = {
-    moqueta: () => ruido(0.09, 520 * vp(), 0.16),
-    moqueta_humeda: () => { // la moqueta empapada de Level 0: chapoteo suave
-      ruido(0.07, 900 * vp(), 0.15, 'bandpass');
-      setTimeout(() => ctx && ruido(0.09, 420 * vp(), 0.1), 45);
+    moqueta: () => ruido(0.09, 520 * vp(), 0.3),
+    moqueta_humeda: () => { // la moqueta empapada de Level 0: chapoteo
+      ruido(0.07, 900 * vp(), 0.28, 'bandpass');
+      setTimeout(() => ctx && ruido(0.09, 420 * vp(), 0.18), 45);
     },
-    hormigon: () => ruido(0.07, 1400 * vp(), 0.18, 'bandpass'),
-    baldosa: () => ruido(0.06, 2000 * vp(), 0.18, 'bandpass'),
-    baldosa_oscura: () => ruido(0.06, 2000 * vp(), 0.18, 'bandpass'),
-    piedra: () => ruido(0.07, 1600 * vp(), 0.18, 'bandpass'),
-    adoquin: () => ruido(0.07, 1500 * vp(), 0.18, 'bandpass'),
+    hormigon: () => ruido(0.07, 1400 * vp(), 0.33, 'bandpass'),
+    baldosa: () => ruido(0.06, 2000 * vp(), 0.33, 'bandpass'),
+    baldosa_oscura: () => ruido(0.06, 2000 * vp(), 0.33, 'bandpass'),
+    piedra: () => ruido(0.07, 1600 * vp(), 0.33, 'bandpass'),
+    adoquin: () => ruido(0.07, 1500 * vp(), 0.33, 'bandpass'),
     tablones: () => {
-      ruido(0.08, 800 * vp(), 0.18);
-      if (Math.random() < 0.25) tono(115 * vp(), 0.2, 0.1, 'triangle', 85); // crujido
+      ruido(0.08, 800 * vp(), 0.32);
+      if (Math.random() < 0.25) tono(115 * vp(), 0.2, 0.16, 'triangle', 85); // crujido
     },
     tablones_claros: () => {
-      ruido(0.08, 800 * vp(), 0.18);
-      if (Math.random() < 0.25) tono(115 * vp(), 0.2, 0.1, 'triangle', 85);
+      ruido(0.08, 800 * vp(), 0.32);
+      if (Math.random() < 0.25) tono(115 * vp(), 0.2, 0.16, 'triangle', 85);
     },
-    moqueta_cenefa: () => ruido(0.09, 520 * vp(), 0.16),
-    rejilla: () => { ruido(0.06, 2400 * vp(), 0.14, 'bandpass'); tono(340 * vp(), 0.1, 0.1, 'triangle', 280); },
-    panel: () => ruido(0.07, 1800 * vp(), 0.16, 'bandpass'),
-    nieve: () => ruido(0.14, 340 * vp(), 0.22),
-    tierra: () => ruido(0.09, 600 * vp(), 0.16),
-    hierba: () => ruido(0.1, 500 * vp(), 0.16),
-    negro: () => ruido(0.09, 400 * vp(), 0.12),
-    blanco: () => { ruido(0.06, 2200 * vp(), 0.16, 'bandpass'); setTimeout(() => ctx && ruido(0.1, 1400, 0.05, 'bandpass'), 130); },
+    moqueta_cenefa: () => ruido(0.09, 520 * vp(), 0.3),
+    rejilla: () => { ruido(0.06, 2400 * vp(), 0.26, 'bandpass'); tono(340 * vp(), 0.1, 0.18, 'triangle', 280); },
+    panel: () => ruido(0.07, 1800 * vp(), 0.3, 'bandpass'),
+    nieve: () => ruido(0.14, 340 * vp(), 0.38),
+    tierra: () => ruido(0.09, 600 * vp(), 0.3),
+    hierba: () => ruido(0.1, 500 * vp(), 0.3),
+    negro: () => ruido(0.09, 400 * vp(), 0.22),
+    blanco: () => { ruido(0.06, 2200 * vp(), 0.3, 'bandpass'); setTimeout(() => ctx && ruido(0.1, 1400, 0.09, 'bandpass'), 130); },
   };
 
   let pasoAlt = false;
@@ -376,7 +376,7 @@
     const nodes = [];
     const g = ctx.createGain();
     g.gain.value = 0.0001;
-    g.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 2);
+    g.gain.exponentialRampToValueAtTime(0.13, ctx.currentTime + 2);
     g.connect(ambBus);
     const receta = RECETAS[levelDef.sonido] ?? RECETAS[RECETA_BIOMA[levelDef.bioma]] ?? RECETAS.hum_suave;
     receta(g, nodes);

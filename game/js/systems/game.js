@@ -220,6 +220,8 @@
       for (let y = 0; y < CH; y++)
         for (let x = 0; x < CH; x++)
           world.explored[(cy + y) * g.w + (cx + x)] = 0;
+      // el render 3D reconstruye su escena al ver cambiar esta versión
+      world.mapaVersion = (world.mapaVersion || 0) + 1;
       return true;
     }
     return false;

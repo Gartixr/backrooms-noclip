@@ -42,9 +42,9 @@
       for (let x = 0; x < S; x++) {
         const col = grid[y][x];
         if (!col) continue;
-        let f = 1.08 - 0.28 * ((y - minY) / hSpan);
-        if (!grid[y - 1]?.[x] || !grid[y][x - 1]) f *= 1.1;   // borde iluminado
-        if (grid[y][x + 1] === null && x < S - 1) f *= 0.92;  // borde derecho en sombra
+        let f = 1.1 - 0.32 * ((y - minY) / hSpan);
+        if (!grid[y - 1]?.[x] || !grid[y][x - 1]) f *= 1.16;  // borde iluminado
+        if (grid[y][x + 1] === null && x < S - 1) f *= 0.88;  // borde derecho en sombra
         ctx.fillStyle = col[0] === '#' ? shadeHex(col, f) : col;
         ctx.fillRect(x * P, y * P, P, P);
       }
@@ -55,114 +55,116 @@
   // caracteres: '.'=transparente; el resto según paleta de cada sprite
   const DEFS = {};
 
-  // ===== JUGADOR =====
+  // ===== JUGADOR (v10: más detalle — pelo 2 tonos, cremallera, cuello, mochila con hebilla) =====
   const palPlayer = {
-    h: '#4a3626', f: '#e8c9a0', e: '#2a2018', j: '#5a6e50', J: '#46573e',
-    s: '#e8c9a0', p: '#3e3a36', b: '#2a2622', k: '#8a5a30', K: '#6e4826',
+    h: '#523c28', H: '#38281a', f: '#e8c9a0', F: '#d0b088', e: '#2a2018',
+    j: '#5f7454', J: '#49593f', z: '#c9c9b2', c: '#70855f',
+    s: '#e8c9a0', p: '#3e3a36', P: '#312e2b', b: '#2a2622', B: '#4d4438',
+    k: '#8a5a30', K: '#6e4826', Q: '#87603a',
   };
   DEFS.player_down = { pal: palPlayer, frames: [[
     '................',
     '.....hhhhhh.....',
     '....hhhhhhhh....',
-    '....hffffffh....',
+    '....Hhhhhhhh....',
     '....hfeffefh....',
-    '.....ffffff.....',
-    '....jjjjjjjj....',
-    '...jjkjjjjkjj...',
-    '...sjkjjjjkjs...',
-    '...sjjjJJjjjs...',
-    '....jjjJJjjj....',
+    '.....fffFff.....',
+    '....cjjzzjjc....',
+    '...jjkjzzjkjj...',
+    '...sjkjzzjkjs...',
+    '...sjJjzzjJjs...',
+    '....jjjzzjjj....',
     '....pppppppp....',
-    '....ppp..ppp....',
+    '....pPp..pPp....',
     '....pp....pp....',
-    '....bb....bb....',
+    '....bB....bB....',
     '................',
   ], [
     '................',
     '.....hhhhhh.....',
     '....hhhhhhhh....',
-    '....hffffffh....',
+    '....Hhhhhhhh....',
     '....hfeffefh....',
-    '.....ffffff.....',
-    '....jjjjjjjj....',
-    '...jjkjjjjkjj...',
-    '...sjkjjjjkjs...',
-    '...sjjjJJjjjs...',
-    '....jjjJJjjj....',
+    '.....fffFff.....',
+    '....cjjzzjjc....',
+    '...jjkjzzjkjj...',
+    '...sjkjzzjkjs...',
+    '...sjJjzzjJjs...',
+    '....jjjzzjjj....',
     '....pppppppp....',
-    '....ppp..pp.....',
+    '....pPp..pP.....',
     '.....pp...pp....',
-    '.....bb...bb....',
+    '.....bB...bB....',
     '................',
   ]] };
   DEFS.player_up = { pal: palPlayer, frames: [[
     '................',
     '.....hhhhhh.....',
     '....hhhhhhhh....',
-    '....hhhhhhhh....',
-    '....hhhhhhhh....',
+    '....hHHHHHHh....',
+    '....hHHHHHHh....',
     '.....hhhhhh.....',
-    '....jjjjjjjj....',
-    '...jjKKKKKKjj...',
-    '...sjKkkkkKjs...',
-    '...sjKkkkkKjs...',
-    '....jKKKKKKj....',
+    '....cjjjjjjc....',
+    '...jKKKKKKKKj...',
+    '...sKQQKKQQKs...',
+    '...sKQQKKQQKs...',
+    '....KKKkkKKK....',
     '....pppppppp....',
-    '....ppp..ppp....',
+    '....pPp..pPp....',
     '....pp....pp....',
-    '....bb....bb....',
+    '....bB....bB....',
     '................',
   ], [
     '................',
     '.....hhhhhh.....',
     '....hhhhhhhh....',
-    '....hhhhhhhh....',
-    '....hhhhhhhh....',
+    '....hHHHHHHh....',
+    '....hHHHHHHh....',
     '.....hhhhhh.....',
-    '....jjjjjjjj....',
-    '...jjKKKKKKjj...',
-    '...sjKkkkkKjs...',
-    '...sjKkkkkKjs...',
-    '....jKKKKKKj....',
+    '....cjjjjjjc....',
+    '...jKKKKKKKKj...',
+    '...sKQQKKQQKs...',
+    '...sKQQKKQQKs...',
+    '....KKKkkKKK....',
     '....pppppppp....',
-    '.....pp..ppp....',
-    '....pp...pp.....',
-    '....bb...bb.....',
+    '.....pPp..pp....',
+    '....pp....pP....',
+    '....bB....bB....',
     '................',
   ]] };
   DEFS.player_side = { pal: palPlayer, frames: [[
     '................',
     '......hhhh......',
     '.....hhhhhh.....',
-    '.....hhffff.....',
+    '.....Hhhhhh.....',
     '.....hhfeff.....',
-    '......ffff......',
-    '.....jjjjjj.....',
-    '....Kjjjjjj.....',
-    '....KKjjjjs.....',
-    '....KKjjjjs.....',
-    '....Kjjjjj......',
+    '......ffFf......',
+    '.....cjjjjc.....',
+    '....KQjjjjj.....',
+    '....KQjjjjs.....',
+    '....KQjJjjs.....',
+    '.....jjjjj......',
     '.....ppppp......',
-    '.....pp.pp......',
-    '.....pp.pp......',
-    '.....bb.bb......',
+    '.....pP.pp......',
+    '.....pp.pP......',
+    '.....bB.bB......',
     '................',
   ], [
     '................',
     '......hhhh......',
     '.....hhhhhh.....',
-    '.....hhffff.....',
+    '.....Hhhhhh.....',
     '.....hhfeff.....',
-    '......ffff......',
-    '.....jjjjjj.....',
-    '....Kjjjjjj.....',
-    '....KKjjjjs.....',
-    '....KKjjjjs.....',
-    '....Kjjjjj......',
+    '......ffFf......',
+    '.....cjjjjc.....',
+    '....KQjjjjj.....',
+    '....KQjjjjs.....',
+    '....KQjJjjs.....',
+    '.....jjjjj......',
     '.....ppppp......',
-    '....pp..pp......',
-    '....pp...pp.....',
-    '....bb...bb.....',
+    '....pP..pp......',
+    '....pp...pP.....',
+    '....bB...bB.....',
     '................',
   ]] };
 
@@ -478,10 +480,30 @@
       cache[id] = def.frames.map((rows) => rasterize(def.pal, rows));
   }
 
-  function get(id, frame) {
-    if (overrides[id]) return overrides[id][frame % overrides[id].length];
-    const f = cache[id];
-    return f ? f[frame % f.length] : null;
+  const mirrorCache = {};
+  function mirror(c) {
+    const m = document.createElement('canvas');
+    m.width = c.width; m.height = c.height;
+    const mc = m.getContext('2d');
+    mc.translate(c.width, 0);
+    mc.scale(-1, 1);
+    mc.drawImage(c, 0, 0);
+    return m;
+  }
+
+  function get(id, frame, flip) {
+    let base;
+    if (overrides[id]) base = overrides[id][frame % overrides[id].length];
+    else {
+      const f = cache[id];
+      base = f ? f[frame % f.length] : null;
+    }
+    if (!base || !flip) return base;
+    const key = id + '::' + (frame % 2);
+    if (!mirrorCache[key] || mirrorCache[key].src !== base) {
+      mirrorCache[key] = { src: base, canvas: mirror(base) };
+    }
+    return mirrorCache[key].canvas;
   }
 
   // intenta cargar PNGs externos (hoja horizontal de frames de 48×48)

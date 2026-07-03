@@ -7,8 +7,8 @@
   "peligro": 1,
   "bioma": "pasillos",
   "tam": [
-   52,
-   52
+   68,
+   68
   ],
   "paleta": {
    "suelo": "#7a6b3d",
@@ -200,8 +200,8 @@
   "peligro": 2,
   "bioma": "tuneles",
   "tam": [
-   56,
-   44
+   73,
+   57
   ],
   "paleta": {
    "suelo": "#4a3830",
@@ -395,8 +395,8 @@
   "peligro": 1,
   "bioma": "pasillos",
   "tam": [
-   48,
-   48
+   62,
+   62
   ],
   "paleta": {
    "suelo": "#5e6e5a",
@@ -876,8 +876,8 @@
   "peligro": 1,
   "bioma": "pasillos",
   "tam": [
-   50,
-   50
+   65,
+   65
   ],
   "paleta": {
    "suelo": "#6a5a48",
@@ -1093,8 +1093,8 @@
   "peligro": 2,
   "bioma": "pasillos",
   "tam": [
-   52,
-   48
+   68,
+   62
   ],
   "paleta": {
    "suelo": "#7a6a45",
@@ -1527,8 +1527,8 @@
   "peligro": 4,
   "bioma": "tuneles",
   "tam": [
-   56,
-   44
+   73,
+   57
   ],
   "paleta": {
    "suelo": "#3e4650",
@@ -1678,8 +1678,8 @@
   "peligro": 3,
   "bioma": "pasillos",
   "tam": [
-   48,
-   48
+   62,
+   62
   ],
   "paleta": {
    "suelo": "#4a5560",
@@ -1986,8 +1986,8 @@
   "peligro": 2,
   "bioma": "pasillos",
   "tam": [
-   52,
-   52
+   68,
+   68
   ],
   "paleta": {
    "suelo": "#585858",
@@ -2110,8 +2110,8 @@
   "peligro": 3,
   "bioma": "pasillos",
   "tam": [
-   46,
-   46
+   60,
+   60
   ],
   "paleta": {
    "suelo": "#8a8a8a",
@@ -2300,8 +2300,8 @@
   "peligro": 5,
   "bioma": "pasillos",
   "tam": [
-   46,
-   46
+   60,
+   60
   ],
   "paleta": {
    "suelo": "#1a0a0a",
@@ -2544,8 +2544,8 @@
   "peligro": 2,
   "bioma": "tuneles",
   "tam": [
-   54,
-   44
+   70,
+   57
   ],
   "paleta": {
    "suelo": "#4a3828",

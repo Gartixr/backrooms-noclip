@@ -6,7 +6,9 @@
   if (!window.THREE) { window.Render3D = null; return; }
 
   // ---- constantes de cámara y escena (afinables) ----
-  const CAM = { fov: 46, dy: 5.2, dz: 6.8, lookY: 0.4, lookAhead: 1.4, suavidad: 0.12, bob: 0.05 };
+  const CAM = { fov: 44, dy: 4.3, dz: 5.8, lookY: 0.4, lookAhead: 1.2, suavidad: 0.085, bob: 0.018 };
+  let camRot = 0;          // rotación de cámara en pasos de 90° (0-3), tecla Q
+  let camYaw = 0;          // yaw animado (radianes)
   const WALL_H = 1.2;      // altura de los muros en unidades-tile (referencia Octopath)
   const SPRITE_H = 1.05;   // alto del billboard de actores
 
@@ -179,34 +181,47 @@
     }
 
     // --- salidas ---
+    const PEGADAS = new Set(['puerta', 'ventana']);
+    const RITUAL_PARED = new Set(['reloj', 'vending', 'boton']);
     for (const ex of world.map.exits) {
+      const paredNorte = esWall(ex.x, ex.y - 1) && tiles.wallStyle === 'tabique';
       const c = Render.exitToCanvas(ex.def);
       const estilo = ex.def.ritual ? 'ritual' : Render.exitStyle(ex.def);
+      const t2 = tex(c);
       if (estilo === 'trampilla' || estilo === 'escalera') {
         // plano tumbado sobre el suelo
         const m = new THREE.Mesh(
           new THREE.PlaneGeometry(0.95, 0.95),
-          new THREE.MeshBasicMaterial({ map: tex(c), transparent: true })
+          new THREE.MeshBasicMaterial({ map: t2, transparent: true })
         );
         m.rotation.x = -Math.PI / 2;
         m.position.set(ex.x + 0.5, 0.02, ex.y + 0.5);
         levelGroup.add(m);
-        ex._mesh3d = m;
+      } else if (paredNorte &&
+        (PEGADAS.has(estilo) || (ex.def.ritual && RITUAL_PARED.has(ex.def.ritual)))) {
+        // FÍSICAMENTE en la cara sur del muro norte: plano vertical fijo
+        const m = new THREE.Mesh(
+          new THREE.PlaneGeometry(1, 1.4),
+          new THREE.MeshBasicMaterial({ map: t2, transparent: true })
+        );
+        m.position.set(ex.x + 0.5, 0.7, ex.y + 0.045);
+        levelGroup.add(m);
       } else {
-        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true }));
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t2, transparent: true }));
         s.scale.set(1, 1.5, 1);
         s.position.set(ex.x + 0.5, 0.72, ex.y + 0.5);
         levelGroup.add(s);
-        ex._mesh3d = s;
       }
     }
 
-    // --- props ---
+    // --- props (los muebles de pared, arrimados a su muro) ---
+    const PROPS_PARED = new Set(['taquilla', 'archivador', 'nevera', 'reloj', 'camilla']);
     for (const pr of world.map.props || []) {
       const c = Render.propToCanvas(pr.id);
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c, 'prop-' + pr.id), transparent: true }));
       s.scale.set(1, 1.5, 1);
-      s.position.set(pr.x + 0.5, 0.62, pr.y + 0.5);
+      const arrimado = PROPS_PARED.has(pr.id) && esWall(pr.x, pr.y - 1);
+      s.position.set(pr.x + 0.5, 0.62, pr.y + (arrimado ? 0.24 : 0.5));
       levelGroup.add(s);
       pr._mesh3d = s;
     }
@@ -232,7 +247,7 @@
     // --- atmósfera del nivel ---
     const fondo = new THREE.Color(pal.fondo);
     scene.background = fondo;
-    scene.fog = new THREE.FogExp2(fondo, 0.062 + world.level.oscuridad * 0.16);
+    scene.fog = new THREE.FogExp2(fondo, 0.08 + world.level.oscuridad * 0.16);
     amb.intensity = Math.max(0.12, 0.55 - world.level.oscuridad * 0.4);
     plight.color = new THREE.Color(pal.luz);
     plight.distance = (world.visionActual() + 3) * 1.6;
@@ -246,6 +261,13 @@
     const key = 'ent-' + glyph + '-' + frame;
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.get(glyph, frame);
+    return c ? tex(c, key) : null;
+  }
+
+  function spriteTexFlip(glyph, frame, flip) {
+    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '');
+    if (texCache.has(key)) return texCache.get(key);
+    const c = Sprites.get(glyph, frame, flip);
     return c ? tex(c, key) : null;
   }
 
@@ -283,19 +305,29 @@
   // ---------- frame ----------
   function frame(world, t) {
     if (!world.level || !world.map) return;
-    const key = world.level.id + '::' + (world.entryCount?.[world.level.id] ?? 0);
+    const key = world.level.id + '::' + (world.entryCount?.[world.level.id] ?? 0) +
+      '::' + (world.mapaVersion || 0); // remodelaciones no euclidianas → rebuild
     if (key !== levelKey) { levelKey = key; buildLevel(world); }
 
     const p = world.player;
     const px = p.rx + 0.5, pz = p.ry + 0.5;
 
-    // jugador
+    // jugador: orientación del sprite RELATIVA a la cámara rotada
     const dir = p.dir || 'down';
-    const sid = dir === 'side' ? 'player_side' : 'player_' + dir;
+    let wx = 0, wy = 0;
+    if (dir === 'down') wy = 1;
+    else if (dir === 'up') wy = -1;
+    else { wx = p.flip ? -1 : 1; }
+    const th = camRot * Math.PI / 2;
+    const svx = Math.round(Math.cos(th) * wx - Math.sin(th) * wy);
+    const svy = Math.round(Math.sin(th) * wx + Math.cos(th) * wy);
+    let sid, sflip = false;
+    if (svy > 0) sid = 'player_down';
+    else if (svy < 0) sid = 'player_up';
+    else { sid = 'player_side'; sflip = svx < 0; }
     const pframe = world.moving ? Math.floor(t / 160) % 2 : 0;
-    playerSprite.material.map = spriteTex(sid, pframe);
+    playerSprite.material.map = spriteTexFlip(sid, pframe, sflip);
     playerSprite.material.needsUpdate = true;
-    playerSprite.scale.x = p.flip ? -1 : 1;
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
 
     // entidades (crear bajo demanda, ocultar si no visibles)
@@ -342,12 +374,20 @@
     plight.position.set(px, 1.6, pz);
     if (p.luz) plight.distance = (world.visionActual() + 3) * 1.6;
 
-    // cámara Octopath: baja, cercana, con inercia y bob
-    if (world.moving) camBobT += 0.16;
-    const bob = Math.sin(camBobT) * CAM.bob * (world.moving ? 1 : 0.2);
-    const target = new THREE.Vector3(px, CAM.dy + bob, pz + CAM.dz);
+    // cámara Octopath: baja, cercana, con inercia, bob sutil y rotación 90° (Q)
+    if (world.moving) camBobT += 0.11;
+    const bob = Math.sin(camBobT) * CAM.bob * (world.moving ? 1 : 0.15);
+    const yawObjetivo = camRot * Math.PI / 2;
+    // camino angular más corto
+    let dyaw = yawObjetivo - camYaw;
+    while (dyaw > Math.PI) dyaw -= Math.PI * 2;
+    while (dyaw < -Math.PI) dyaw += Math.PI * 2;
+    camYaw += dyaw * 0.1;
+    const ox = Math.sin(camYaw) * CAM.dz;
+    const oz = Math.cos(camYaw) * CAM.dz;
+    const target = new THREE.Vector3(px + ox, CAM.dy + bob, pz + oz);
     camera.position.lerp(target, CAM.suavidad);
-    camera.lookAt(px, CAM.lookY, pz - CAM.lookAhead);
+    camera.lookAt(px - Math.sin(camYaw) * CAM.lookAhead, CAM.lookY, pz - Math.cos(camYaw) * CAM.lookAhead);
 
     renderer.render(scene, camera);
     drawOverlay(world, t);
@@ -387,5 +427,9 @@
     }
   }
 
-  window.Render3D = { init, frame, project, TILE: 48 };
+  window.Render3D = {
+    init, frame, project, TILE: 48,
+    rotar() { camRot = (camRot + 1) % 4; },
+    get rot() { return camRot; },
+  };
 })();

@@ -109,7 +109,20 @@
     if (document.getElementById('screen-card').style.display !== 'none') return;
     if (KEYS[ev.code]) {
       ev.preventDefault();
-      Game.tryMove(...KEYS[ev.code]);
+      let [dx, dy] = KEYS[ev.code];
+      // con la cámara rotada (Q), las flechas son relativas a la pantalla
+      if (use3D && Render3D.rot) {
+        const th = -Render3D.rot * Math.PI / 2;
+        const rx = Math.round(Math.cos(th) * dx - Math.sin(th) * dy);
+        const ry = Math.round(Math.sin(th) * dx + Math.cos(th) * dy);
+        dx = rx; dy = ry;
+      }
+      Game.tryMove(dx, dy);
+    } else if (ev.code === 'KeyQ') {
+      if (use3D) {
+        Render3D.rotar();
+        world.ui.log('Giras la vista 90°.', 'event');
+      }
     } else if (ev.code === 'Space') {
       ev.preventDefault();
       Game.wait();

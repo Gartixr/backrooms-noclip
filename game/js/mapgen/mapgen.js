@@ -13,13 +13,16 @@
   // ---------- arquetipos ----------
 
   // Laberinto denso con salas abiertas (Level 0, 27, 130, 483...)
+  // v10: se genera a media resolución y se escala ×2 → pasillos de 2 tiles
+  // de ancho, espaciosos (referencia Octopath).
   function genPasillos(w, h, rng, opts = {}) {
-    const g = grid(w, h, T.PARED);
-    const cw = Math.floor((w - 1) / 2), ch = Math.floor((h - 1) / 2);
+    const hw = Math.ceil(w / 2), hh = Math.ceil(h / 2);
+    const small = grid(hw, hh, T.PARED);
+    const cw = Math.floor((hw - 1) / 2), ch = Math.floor((hh - 1) / 2);
     const seen = new Set();
     const stack = [[0, 0]];
     seen.add('0,0');
-    set(g, 1, 1, T.SUELO);
+    set(small, 1, 1, T.SUELO);
     while (stack.length) {
       const [cx, cy] = stack[stack.length - 1];
       const dirs = rng.shuffle([[1, 0], [-1, 0], [0, 1], [0, -1]]);
@@ -28,14 +31,19 @@
         const nx = cx + dx, ny = cy + dy;
         if (nx < 0 || ny < 0 || nx >= cw || ny >= ch || seen.has(nx + ',' + ny)) continue;
         seen.add(nx + ',' + ny);
-        set(g, cx * 2 + 1 + dx, cy * 2 + 1 + dy, T.SUELO);
-        set(g, nx * 2 + 1, ny * 2 + 1, T.SUELO);
+        set(small, cx * 2 + 1 + dx, cy * 2 + 1 + dy, T.SUELO);
+        set(small, nx * 2 + 1, ny * 2 + 1, T.SUELO);
         stack.push([nx, ny]);
         moved = true;
         break;
       }
       if (!moved) stack.pop();
     }
+    // escala ×2 al tamaño real, con borde exterior de pared
+    const g = grid(w, h, T.PARED);
+    for (let y = 1; y < h - 1; y++)
+      for (let x = 1; x < w - 1; x++)
+        g.t[y * w + x] = small.t[(y >> 1) * hw + (x >> 1)];
     // abre salas y atajos para que respire
     const salas = opts.salas ?? 8;
     for (let i = 0; i < salas; i++) {
@@ -74,24 +82,28 @@
     return g;
   }
 
-  // Túneles serpenteantes estrechos (Level 2, 268, The Hub)
+  // Túneles serpenteantes (Level 2, 268, The Hub) — v10: a media resolución
+  // escalado ×2 → túneles de 2 de ancho, espaciosos.
   function genTuneles(w, h, rng, opts = {}) {
-    const g = grid(w, h, T.PARED);
-    let x = rng.int(4, w - 5), y = rng.int(4, h - 5);
+    const hw = Math.ceil(w / 2), hh = Math.ceil(h / 2);
+    const small = grid(hw, hh, T.PARED);
+    let x = rng.int(2, hw - 3), y = rng.int(2, hh - 3);
     const walkers = opts.walkers ?? 5;
     for (let k = 0; k < walkers; k++) {
       let wx = x, wy = y, dir = rng.pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
-      for (let i = 0; i < w * 4; i++) {
-        set(g, wx, wy, T.SUELO);
-        if (opts.ancho && rng.chance(0.75)) { set(g, wx + 1, wy, T.SUELO); set(g, wx, wy + 1, T.SUELO); }
+      for (let i = 0; i < hw * 4; i++) {
+        set(small, wx, wy, T.SUELO);
         if (rng.chance(0.22)) dir = rng.pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
-        wx = Math.max(1, Math.min(w - 2, wx + dir[0]));
-        wy = Math.max(1, Math.min(h - 2, wy + dir[1]));
+        wx = Math.max(1, Math.min(hw - 2, wx + dir[0]));
+        wy = Math.max(1, Math.min(hh - 2, wy + dir[1]));
       }
-      // el siguiente walker parte de un punto ya excavado
-      const floors = collectFloors(g);
+      const floors = collectFloors(small);
       const p = rng.pick(floors); x = p[0]; y = p[1];
     }
+    const g = grid(w, h, T.PARED);
+    for (let yy = 1; yy < h - 1; yy++)
+      for (let xx = 1; xx < w - 1; xx++)
+        g.t[yy * w + xx] = small.t[(yy >> 1) * hw + (xx >> 1)];
     return g;
   }
 
@@ -345,20 +357,27 @@
     const props = [];
     const exitKeys = new Set(exits.map((e) => e.y * g.w + e.x));
     const libre = (p) => !exitKeys.has(p[1] * g.w + p[0]);
+    // los muebles "de pared" van físicamente pegados a un muro (pared al norte)
+    const PROPS_PARED = new Set(['taquilla', 'archivador', 'nevera', 'reloj', 'camilla', 'farola']);
+    const conParedNorte = reach.filter(([x, y]) => at(g, x, y - 1) === T.PARED);
+    const sitioPara = (id) =>
+      PROPS_PARED.has(id) && conParedNorte.length ? rng.pick(conParedNorte) : rng.pick(reach);
     const decorativos = PROPS_BIOMA[levelDef.bioma] ?? [];
     if (decorativos.length) {
       const n = rng.int(7, 13);
       for (let i = 0; i < n; i++) {
-        const p = rng.pick(reach);
+        const id = rng.pick(decorativos);
+        const p = sitioPara(id);
         if (!libre(p)) continue;
-        props.push({ x: p[0], y: p[1], id: rng.pick(decorativos), contenedor: false });
+        props.push({ x: p[0], y: p[1], id, contenedor: false });
       }
     }
     const nCont = rng.int(3, 5);
     for (let i = 0; i < nCont; i++) {
-      const p = rng.pick(reach);
+      const id = CONT_BIOMA[levelDef.bioma] ?? 'cofre';
+      const p = sitioPara(id);
       if (!libre(p)) continue;
-      props.push({ x: p[0], y: p[1], id: CONT_BIOMA[levelDef.bioma] ?? 'cofre', contenedor: true, registrado: false });
+      props.push({ x: p[0], y: p[1], id, contenedor: true, registrado: false });
     }
     // el reloj es exclusivo de Level 80
     if (levelDef.id === 'level-80') {

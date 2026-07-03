@@ -17,6 +17,7 @@ cenital 2D clásica: `index.html?render=2d`.
 |---|---|
 | WASD / flechas | Moverte (1 paso = 1 turno; el mundo solo avanza cuando tú actúas) |
 | E | Interactuar: cruzar salidas y **registrar muebles** (taquillas, neveras… tirada de dado) |
+| Q | Girar la cámara 90° (las flechas siempre son relativas a la pantalla) |
 | Espacio | Esperar un turno |
 | F | Encender/apagar linterna (¡su luz atrae a las Deathmoths!) |
 | R | Volver al nivel anterior (cuesta cordura) |
