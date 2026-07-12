@@ -4,6 +4,9 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v27.6', cambios: [
+      'Música ambiental real para Level 6 ("Lights Out").',
+    ] },
     { v: 'v27.5', cambios: [
       'Arreglado: en móvil los controles táctiles no aparecían nunca.',
       'Nuevo joystick para moverte libremente en el modo multijugador, y botón de Ajustes táctil.',
