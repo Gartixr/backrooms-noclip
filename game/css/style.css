@@ -66,6 +66,16 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   padding: 7px 16px; cursor: pointer; margin-top: 12px; transition: all .12s; }
 .btn-small:hover { color: var(--hueso); border-color: var(--gris); }
 .btn-small:active { transform: translateY(1px); }
+/* aviso sutil de "hay novedades" (changelog no visto): desaparece al abrirlo */
+.btn-small.novedad { border-color: var(--amarillo); color: var(--amarillo);
+  animation: glow-novedad 2.2s ease-in-out infinite; }
+@keyframes glow-novedad {
+  0%, 100% { box-shadow: 0 0 4px rgba(217,198,110,.25); }
+  50% { box-shadow: 0 0 13px rgba(217,198,110,.75); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-small.novedad { animation: none; box-shadow: 0 0 10px rgba(217,198,110,.5); }
+}
 
 /* ---------- tarjeta de nivel ---------- */
 .level-card { max-width: 680px; width: 92%; padding: 34px 38px; position: relative;

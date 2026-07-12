@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v27.3';
+  window.VERSION_JUEGO = 'v27.4';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -1386,7 +1386,10 @@
     ev.target.value = '';
   };
   $id('btn-codex').onclick = () => world.ui.toggleCodex(true);
-  $id('btn-changelog').onclick = () => world.ui.toggleChangelog(true);
+  $id('btn-changelog').onclick = () => {
+    if (window.Changelog) Changelog.marcarVisto();
+    world.ui.toggleChangelog(true);
+  };
 
   $id('btn-start').onclick = () => {
     conectarAlServidor($id('btn-start'));

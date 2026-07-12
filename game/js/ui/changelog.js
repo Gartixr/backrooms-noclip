@@ -4,6 +4,9 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v27.4', cambios: [
+      'Nuevo panel "Observatorio del Guardián": el streamer puede ver en vivo quién juega, moderar (expulsar/banear) y consultar estadísticas del servidor.',
+    ] },
     { v: 'v27.2', cambios: [
       'Nueva pestaña Changelog en la pantalla de título: qué ha cambiado en cada versión, resumido.',
     ] },
@@ -81,6 +84,23 @@
     ] },
   ];
 
+  // aviso de "hay novedades" en el botón de título: compara con la última
+  // versión vista guardada en localStorage, no con VERSION_JUEGO (este script
+  // carga antes que main.js en el orden de <script> de index.html)
+  const CLAVE_VISTO = 'backrooms-changelog-visto';
+  const ultima = CHANGELOG[0].v;
+
+  function marcarNovedadSiHace() {
+    const boton = document.getElementById('btn-changelog');
+    if (boton && localStorage.getItem(CLAVE_VISTO) !== ultima) boton.classList.add('novedad');
+  }
+
+  function marcarVisto() {
+    localStorage.setItem(CLAVE_VISTO, ultima);
+    const boton = document.getElementById('btn-changelog');
+    if (boton) boton.classList.remove('novedad');
+  }
+
   function render(cont) {
     if (!cont || cont.childElementCount) return; // contenido estático: se pinta una sola vez
     const frag = document.createDocumentFragment();
@@ -104,5 +124,6 @@
     cont.appendChild(frag);
   }
 
-  window.Changelog = { render };
+  window.Changelog = { render, marcarVisto };
+  marcarNovedadSiHace();
 })();
