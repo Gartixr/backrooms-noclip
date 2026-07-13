@@ -10,7 +10,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 const P = require('./protocolo');
 const filtro = require('./filtro');
-const { asignar, tickTodas, estado, observa, chatReciente } = require('./sala');
+const { asignar, tickTodas, estado, totalJugadores, observa, chatReciente } = require('./sala');
 const { DATA } = require('./sim/mundo');
 const db = require('./db');
 
@@ -89,6 +89,14 @@ function buscarPorId(id) {
 
 const servidor = http.createServer((req, res) => {
   const rutaUrl = (req.url || '/').split('?')[0];
+  if (rutaUrl === '/censo') {
+    res.writeHead(200, {
+      'content-type': 'application/json',
+      'cache-control': 'no-store',
+    });
+    res.end(JSON.stringify({ total: totalJugadores() }));
+    return;
+  }
   if (rutaUrl === '/estado') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify(estado()));
@@ -318,11 +326,12 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
     } else jug.ofertaEn = null;
   }
   jug.x = x; jug.y = y;
-  jug.canal = null; jug.escondido = null;
+  jug.canal = null; jug.escondido = null; jug.manila = null;
   // teleport de sala: caducan los informes de posición en vuelo (v24)
   jug.sec = (jug.sec || 0) + 1;
   jug._posT = Date.now();
   jug._margen = 0.8;
+  nueva.protegerPrimeraVisita(jug);
   nueva.prepararCaminata(jug);
   const id = jug.id;
   nueva.jugadores.set(id, jug);
@@ -436,8 +445,17 @@ function comando(jug, sala, linea) {
       sala.enviar(jug.ws, { t: 'aviso', txt: 'Clave actualizada para esta sesión, pero no se pudo guardar en disco.' });
     }
     console.log(`[admin] ${jug.nombre}#${jug.id} cambió la clave de guardián`);
+  } else if (cmd === '/reiniciar') {
+    // reinicio del PROCESO desde el chat: el guardián avisa a todos, el
+    // proceso sale limpio y systemd (Restart=always) lo revive en ~3 s; los
+    // clientes reconectan solos. El mundo vivo (salas/posiciones) se pierde
+    // —está en memoria—; jugadores, visitas y baneos persisten en mmo.db.
+    for (const s of salasVivas())
+      s.difundir({ t: 'anuncio', txt: 'El guardián reinicia la realidad. Las Backrooms parpadean: volvéis en unos segundos…' });
+    console.log(`[admin] ${jug.nombre}#${jug.id} reinicia el servidor`);
+    setTimeout(() => process.exit(0), 1200); // margen para que el anuncio llegue
   } else {
-    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva>' });
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva> · /reiniciar' });
   }
 }
 

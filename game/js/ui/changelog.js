@@ -4,6 +4,23 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.9', cambios: [
+      'Nuevo comando de guardián /reiniciar: reinicia el servidor desde el chat — avisa a todos y el mundo vuelve solo en unos segundos (las fichas de jugador se conservan).',
+    ] },
+    { v: 'v28.8', cambios: [
+      'El riesgo de caer al Vacío al cruzar una salida arriesgada ya funciona también en multijugador (antes solo en modo solo). (AgenteMaxo)',
+      'Nueva salida de emergencia en Level 0 hacia Level 14: puerta roja con rótulo EXIT y luz de emergencia, distinta a cualquier otra puerta del juego. (AgenteMaxo)',
+      'Nueva Sala Manila en Level 0: una sala tranquila con luz anaranjada tenue. Quedarse dentro varios minutos te lleva, sin avisar, a Level 1 o Level 2. (AgenteMaxo)',
+      'Retirado el sistema de Sintonía/Instintos (el ojo amarillo y las cartas de habilidad al cruzar ciertos umbrales) en modo solo. (AgenteMaxo)',
+    ] },
+    { v: 'v28.7', cambios: [
+      'Las manchas de humedad del suelo ya no se repiten en un patrón visible, ahora se reparten al azar. (carlosdiezm)',
+      'Arreglado: el menú de configuración del mando no se cerraba bien con ESC. (carlosdiezm)',
+    ] },
+    { v: 'v28.6', cambios: [
+      'Arreglado (multijugador): algunas entidades podían golpear casi al instante, sin dar tiempo a esquivar el aviso. (josealmon)',
+      'Nueva protección de 3 segundos al entrar por primera vez a cada nivel, para no morir nada más cruzar. (josealmon)',
+    ] },
     { v: 'v28.5', cambios: [
       'Arreglado: la música del menú a veces seguía sonando después de empezar la partida.',
       'Los campos de contraseña ya no se rellenan solos con datos guardados del navegador.',

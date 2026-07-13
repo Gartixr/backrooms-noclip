@@ -27,6 +27,7 @@ function chatReciente(nivel, desdeSeq) {
   return chatLog.filter((c) => (!nivel || c.nivel === nivel) && c.seq > (desdeSeq | 0));
 }
 const REMODEL_ONLINE = false; // ver nota en tick(): apagada hasta reenviar chunks al entrar
+const PROTECCION_ENTRADA_MS = 3000;
 
 // vector cardinal más cercano a un ángulo θ (0=N, π/2=E, π=S, 3π/2=O)
 function cardinalDe(th) {
@@ -137,16 +138,19 @@ class Sala {
       salud: 100, sed: 100, cordura: 100, luz: false, escondido: null, muerto: false,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       esAdmin: false, muteadoHasta: 0,
-      ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
+      ultMov: 0, ultChat: 0, canal: null, ofertaEn: null, manila: null,
       // observatorio: cuándo entró al mundo y cuántos informes de posición
       // ilegales acumula (vel = speedhack, muro = noclip) — señal de auditoría
       conectadoEn: Date.now(), rechazos: { vel: 0, muro: 0 },
       retorno: null, // puerta personal de vuelta (v23; la pone cambiarDeSala)
+      nivelesProtegidos: new Set(),
+      invulnerableHasta: 0,
       // v24 — autoridad del cliente con validación:
       sec: 0,            // nº de teleport: descarta informes en vuelo tras un salto
       _posT: Date.now(), // hora del último informe (presupuesto de velocidad)
       _margen: 0.8,      // cubeta de distancia disponible (anti-speedhack)
     };
+    this.protegerPrimeraVisita(jug);
     this.prepararCaminata(jug);
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
@@ -158,6 +162,16 @@ class Sala {
     this.difundir({ t: 'entra', id, nombre, x, y, rot: jug.rot });
     this.jugadores.set(id, jug);
     return jug;
+  }
+
+  // Una sola ventana de seguridad por nivel y por conexión/run. Al conservar
+  // el Set en `jug` durante los cruces, volver por una puerta no la renueva.
+  protegerPrimeraVisita(jug, ahora = Date.now()) {
+    jug.nivelesProtegidos ||= new Set();
+    if (jug.nivelesProtegidos.has(this.nivelId)) return false;
+    jug.nivelesProtegidos.add(this.nivelId);
+    jug.invulnerableHasta = ahora + PROTECCION_ENTRADA_MS;
+    return true;
   }
 
   // La caminata online es PERSONAL: tus pasos reales en el nivel te van
@@ -280,6 +294,42 @@ class Sala {
     this.proximidad(jug);
     this.supervivencia(jug, d);
     this.caminataAvanza(jug, d);
+    this.manilaAvanza(jug);
+  }
+
+  // Sala Manila: permanencia REAL (minutos de reloj) — ambiental, NO usa
+  // jug.canal (eso bloquearía registrar/esconderse durante minutos enteros).
+  // Cada estancia (entra/sale/reentra) es un intento propio con su tirada.
+  manilaAvanza(jug) {
+    const rect = this.map.manila;
+    if (!rect || jug.muerto) { jug.manila = null; return; }
+    const dentro = jug.x >= rect.x && jug.x < rect.x + rect.w &&
+      jug.y >= rect.y && jug.y < rect.y + rect.h;
+    if (!dentro) { jug.manila = null; return; }
+    if (!jug.manila) {
+      jug.manilaIntento = (jug.manilaIntento || 0) + 1;
+      const seg = MapGen.manilaGoal(this.map.manilaSalida, `${jug.token}::${this.clave}`, jug.manilaIntento);
+      jug.manila = { desde: Date.now(), objetivoMs: seg * 1000, aviso: 0 };
+      return;
+    }
+    const frac = (Date.now() - jug.manila.desde) / jug.manila.objetivoMs;
+    if (frac >= 0.5 && jug.manila.aviso < 1) {
+      jug.manila.aviso = 1;
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Este sitio empieza a difuminarte los sentidos…' });
+    } else if (frac >= 0.8 && jug.manila.aviso < 2) {
+      jug.manila.aviso = 2;
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Cuesta recordar por qué entraste aquí…' });
+    } else if (frac >= 1) {
+      jug.manila = null;
+      const original = this.map.manilaSalida;
+      if (!original || !this.alCruzar) return;
+      let destino = original.destino;
+      if (destino?.startsWith('*opciones:'))
+        destino = this.rng.pick(destino.slice('*opciones:'.length).split(','));
+      const def = { ...original, destino, _destinoResuelto: destino };
+      this.enviar(jug.ws, { t: 'aviso', txt: 'El tiempo se te ha escapado de las manos. Ya no sabes cuánto llevas aquí.' });
+      this.alCruzar(jug, this, def, { sinTarjeta: true });
+    }
   }
 
   // caminata personal por DISTANCIA recorrida (1 «paso» ≈ 1 tile)
@@ -460,11 +510,27 @@ class Sala {
       // La definición pertenece al mapa compartido: no convertir la puerta en
       // un destino fijo para quienes la crucen después.
       def = { ...defOriginal, destino, _destinoResuelto: destino };
+    } else if (defOriginal.destino?.startsWith('*opciones:')) {
+      const opciones = defOriginal.destino.slice('*opciones:'.length).split(',');
+      const destino = this.rng.pick(opciones);
+      def = { ...defOriginal, destino, _destinoResuelto: destino };
     }
     if ((def._mec === 'romper' || def._mec === 'romper_suelo') && !def._abierta) return;
     if (!DATA.levels[def.destino]) {
       this.enviar(jug.ws, { t: 'aviso', txt: 'Ese camino no lleva a ninguna parte (nivel fuera del piloto).' });
       return;
+    }
+    // ---------- riesgoVoid (paridad con crossExit de game.js) ----------
+    // el mismo d20 que resolverCanal (this.rng, semilla de sala): la MISMA
+    // secuencia determinista consumida por todo lo que ocurre en la sala.
+    if (def.tipo === 'arriesgada' && def.riesgoVoid > 0) {
+      let d = this.rng.int(1, 20);
+      if (jug.inv.includes('trebol') || jug.manos.includes('trebol') || Object.values(jug.equipo).includes('trebol'))
+        d = Math.min(20, d + 2);
+      const umbral = Math.round(def.riesgoVoid * 20);
+      const exito = d > umbral; // offline: d <= umbral === caes
+      this.enviar(jug.ws, { t: 'dado', id: jug.id, valor: d, exito });
+      if (!exito) { this.morir(jug, 'el Vacío'); return; }
     }
     if (this.alCruzar) this.alCruzar(jug, this, def);
   }
@@ -760,6 +826,7 @@ class Sala {
     jug.muerto = true;
     jug.escondido = null;
     jug.canal = null;
+    jug.manila = null;
     if (jug.luz) this.luz(jug, false); // la linterna se pierde con el resto
     db.sumarMuerte(jug.token);
     this.enviar(jug.ws, { t: 'botinReset', semilla: this.semilla });
@@ -980,6 +1047,11 @@ function estado() {
   };
 }
 
+// Censo público mínimo para la portada. No expone salas, niveles ni claves.
+function totalJugadores() {
+  return [...salas.values()].reduce((n, s) => n + s.jugadores.size, 0);
+}
+
 // Observatorio (solo guardián): el detalle que /estado no da — cada jugador
 // con sus barras, inventario, equipo y rechazos del validador. `dicc` traduce
 // ids de objeto a nombre para que el panel no muestre claves crudas.
@@ -1050,4 +1122,4 @@ setInterval(() => {
 
 function todas() { return [...salas.values()]; }
 
-module.exports = { Sala, asignar, tickTodas, estado, observa, chatReciente, todas, SALA_PUBLICA, GRACIA_SALA_VACIA };
+module.exports = { Sala, asignar, tickTodas, estado, totalJugadores, observa, chatReciente, todas, SALA_PUBLICA, GRACIA_SALA_VACIA };
