@@ -107,7 +107,7 @@
     }
 
     // 5. Abrir Códice en la pantalla de título si se pulsa C
-    if (ev.code === 'KeyC' && (!world.level || world.over)) {
+    if (ev.code === 'KeyC' && (!window.world || !world.level || world.over)) {
       const titleScreen = document.getElementById('screen-title');
       if (titleScreen && titleScreen.style.display !== 'none') {
         const sndMenu = document.getElementById('sound-menu');
